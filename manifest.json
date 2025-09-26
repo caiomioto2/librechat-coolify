@@ -1,0 +1,56 @@
+{
+    "dxt_version": "0.1",
+    "name": "gomarble-mcp-server",
+    "display_name": "GoMarble MCP Server",
+    "version": "0.1.0",
+    "description": "Gomarble MCP Server",
+    "long_description": "Gomarble MCP Server",
+    "author": {
+      "name": "Gomarble AI",
+      "email": "support@gomarble.ai",
+      "url": "https://gomarble.ai"
+    },
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/gomarble-ai"
+    },
+    "homepage": "https://gomarble.ai",
+    "icon": "favicon.png",
+    "server": {
+      "type": "node",
+      "entry_point": "server/index.js",
+      "mcp_config": {
+        "command": "node",
+        "args": [
+          "${__dirname}/server/index.js",
+          "Gomarble MCP Server",
+          "https://apps.gomarble.ai/mcp-api/sse",
+          "${user_config.api_key}"
+        ]
+      }
+    },
+    "tools": [],
+    "keywords": [
+      "stdio",
+      "sse",
+      "mcp",
+      "proxy"
+    ],
+    "license": "MIT",
+    "user_config": {
+      "api_key": {
+        "type": "string",
+        "title": "Gomarble MCP Server API Key",
+        "description": "Create an API key in the Gomarble MCP Server integration page. Here: https://apps.gomarble.ai/setup/integrations",
+        "sensitive": true,
+        "required": true
+      }
+    },
+    "compatibility": {
+      "claude_desktop": ">=0.10.0",
+      "platforms": ["darwin", "win32", "linux"],
+      "runtimes": {
+        "node": ">=16.0.0"
+      }
+    }
+  }

@@ -1,217 +1,294 @@
-<p align="center">
-  <a href="https://librechat.ai">
-    <img src="client/public/assets/logo.svg" height="256">
-  </a>
-  <h1 align="center">
-    <a href="https://librechat.ai">LibreChat</a>
-  </h1>
-</p>
+# MCP SSE Proxy
 
-<p align="center">
-  <a href="https://discord.librechat.ai"> 
-    <img
-      src="https://img.shields.io/discord/1086345563026489514?label=&logo=discord&style=for-the-badge&logoWidth=20&logoColor=white&labelColor=000000&color=blueviolet">
-  </a>
-  <a href="https://www.youtube.com/@LibreChat"> 
-    <img
-      src="https://img.shields.io/badge/YOUTUBE-red.svg?style=for-the-badge&logo=youtube&logoColor=white&labelColor=000000&logoWidth=20">
-  </a>
-  <a href="https://docs.librechat.ai"> 
-    <img
-      src="https://img.shields.io/badge/DOCS-blue.svg?style=for-the-badge&logo=read-the-docs&logoColor=white&labelColor=000000&logoWidth=20">
-  </a>
-  <a aria-label="Sponsors" href="https://github.com/sponsors/danny-avila">
-    <img
-      src="https://img.shields.io/badge/SPONSORS-brightgreen.svg?style=for-the-badge&logo=github-sponsors&logoColor=white&labelColor=000000&logoWidth=20">
-  </a>
-</p>
+A Model Context Protocol (MCP) server that acts as a proxy, bridging STDIO-based MCP clients with SSE (Server-Sent Events) based MCP servers. This enables MCP clients that only support STDIO transport to connect to remote MCP servers that use SSE transport.
 
-<p align="center">
-<a href="https://railway.app/template/b5k2mn?referralCode=HI9hWz">
-  <img src="https://railway.app/button.svg" alt="Deploy on Railway" height="30">
-</a>
-<a href="https://zeabur.com/templates/0X2ZY8">
-  <img src="https://zeabur.com/button.svg" alt="Deploy on Zeabur" height="30"/>
-</a>
-<a href="https://template.cloud.sealos.io/deploy?templateName=librechat">
-  <img src="https://raw.githubusercontent.com/labring-actions/templates/main/Deploy-on-Sealos.svg" alt="Deploy on Sealos" height="30">
-</a>
-</p>
+## Overview
 
-<p align="center">
-  <a href="https://www.librechat.ai/docs/translation">
-    <img 
-      src="https://img.shields.io/badge/dynamic/json.svg?style=for-the-badge&color=2096F3&label=locize&query=%24.translatedPercentage&url=https://api.locize.app/badgedata/4cb2598b-ed4d-469c-9b04-2ed531a8cb45&suffix=%+translated" 
-      alt="Translation Progress">
-  </a>
-</p>
+The MCP SSE Proxy creates a bridge between two different MCP transport protocols:
+- **STDIO Transport**: Used by local MCP clients (like Claude Desktop)
+- **SSE Transport**: Used by remote MCP servers accessible via HTTP/HTTPS
+
+This proxy allows you to use remote MCP servers that expose SSE endpoints from applications that only support STDIO-based MCP connections.
+
+## Features
+
+- **Full MCP Protocol Support**: Proxies all MCP capabilities including:
+  - Tools (listing and calling)
+  - Resources (listing and reading)
+  - Resource Templates (listing)
+  - Prompts (listing and getting)
+- **Authentication Support**: Optional API key authentication for SSE endpoints
+- **Error Handling**: Comprehensive error handling with detailed logging
+- **Graceful Shutdown**: Proper cleanup on process termination
+- **Configurable**: Flexible configuration via command line arguments or environment variables
+
+## Installation
+
+### Prerequisites
+
+- Node.js >= 18.0.0
+- npm or yarn
+
+### Setup
+
+1. Clone or download this repository
+2. Install dependencies:
+
+```bash
+npm install
+```
+
+## Usage
+
+### Command Line Arguments
+
+```bash
+node server/index.js <SERVER_NAME> <SSE_URL> [API_KEY]
+```
+
+**Parameters:**
+- `SERVER_NAME`: Display name for the MCP server
+- `SSE_URL`: URL of the remote SSE MCP server endpoint
+- `API_KEY`: (Optional) API key for authentication
+
+**Example:**
+```bash
+node server/index.js "My Remote MCP Server" "https://api.example.com/mcp/sse" "your-api-key"
+```
+
+### Environment Variables
+
+Alternatively, you can use environment variables:
+
+```bash
+export SERVER_NAME="My Remote MCP Server"
+export SSE_URL="https://api.example.com/mcp/sse"
+export API_KEY="your-api-key"
+node server/index.js
+```
+
+## Configuration
+
+### MCP Client Configuration
+
+To use this proxy with an MCP client like Claude Desktop, add the following to your MCP configuration:
+
+```json
+{
+  "mcpServers": {
+    "remote-server": {
+      "command": "node",
+      "args": [
+        "/path/to/mcp-proxy-node/server/index.js",
+        "Remote Server Name",
+        "https://your-remote-server.com/mcp/sse",
+        "your-api-key"
+      ]
+    }
+  }
+}
+```
+
+### Authentication
+
+The proxy supports Bearer token authentication. When an API key is provided, it will be sent as:
+- `Authorization: Bearer <API_KEY>` header in HTTP requests
+- Authentication headers for EventSource connections
+
+## Creating a Desktop Extension (.dxt)
+
+This MCP proxy can be packaged as a Desktop Extension for easy one-click installation in Claude Desktop and other MCP-enabled applications.
+
+For the complete guide, see: [Desktop Extensions: One-click MCP server installation for Claude Desktop](https://www.anthropic.com/engineering/desktop-extensions)
+
+### Prerequisites
+
+Install dependencies
+
+```bash
+npm install
+```
+
+Install the DXT CLI tool:
+
+```bash
+npm install -g @anthropic-ai/dxt
+```
+
+### Steps to Create DXT File
+
+1. **Initialize DXT configuration** (if needed):
+   ```bash
+   dxt init
+   ```
+   
+   Note: This project already includes a `manifest.json` file, so initialization may not be necessary.
+
+2. **Validate the manifest**:
+   ```bash
+   dxt validate
+   ```
+
+3. **Package the extension**:
+   ```bash
+   dxt pack
+   ```
+
+4. **Test the extension**:
+   - The command will generate a `.dxt` file
+   - Drag the `.dxt` file into Claude Desktop's Settings window
+   - Click "Install" to test the extension
+
+### Quick Installation (Alternative)
+
+If you don't want to build the extension yourself, you can directly drag and drop the pre-built `mcp-proxy-node.dxt` file into Claude Desktop's Settings window for immediate installation.
+
+### Screenshots
+
+![MCP SSE Proxy Installation](screenshot.png)
+
+*The MCP SSE Proxy extension as it appears in Claude Desktop after installation. Users can easily configure the server name, SSE URL, and API key through the intuitive interface.*
 
 
-# ✨ Features
+## Technical Details
 
-- 🖥️ **UI & Experience** inspired by ChatGPT with enhanced design and features
+### Architecture
 
-- 🤖 **AI Model Selection**:  
-  - Anthropic (Claude), AWS Bedrock, OpenAI, Azure OpenAI, Google, Vertex AI, OpenAI Responses API (incl. Azure)
-  - [Custom Endpoints](https://www.librechat.ai/docs/quick_start/custom_endpoints): Use any OpenAI-compatible API with LibreChat, no proxy required
-  - Compatible with [Local & Remote AI Providers](https://www.librechat.ai/docs/configuration/librechat_yaml/ai_endpoints):
-    - Ollama, groq, Cohere, Mistral AI, Apple MLX, koboldcpp, together.ai,
-    - OpenRouter, Perplexity, ShuttleAI, Deepseek, Qwen, and more
+```
+MCP Client (STDIO) ←→ MCP SSE Proxy ←→ Remote MCP Server (SSE)
+```
 
-- 🔧 **[Code Interpreter API](https://www.librechat.ai/docs/features/code_interpreter)**: 
-  - Secure, Sandboxed Execution in Python, Node.js (JS/TS), Go, C/C++, Java, PHP, Rust, and Fortran
-  - Seamless File Handling: Upload, process, and download files directly
-  - No Privacy Concerns: Fully isolated and secure execution
+The proxy consists of two main components:
 
-- 🔦 **Agents & Tools Integration**:  
-  - **[LibreChat Agents](https://www.librechat.ai/docs/features/agents)**:
-    - No-Code Custom Assistants: Build specialized, AI-driven helpers
-    - Agent Marketplace: Discover and deploy community-built agents
-    - Collaborative Sharing: Share agents with specific users and groups
-    - Flexible & Extensible: Use MCP Servers, tools, file search, code execution, and more
-    - Compatible with Custom Endpoints, OpenAI, Azure, Anthropic, AWS Bedrock, Google, Vertex AI, Responses API, and more
-    - [Model Context Protocol (MCP) Support](https://modelcontextprotocol.io/clients#librechat) for Tools
+1. **MCP Server**: Accepts STDIO connections from local MCP clients
+2. **MCP Client**: Connects to remote SSE MCP servers
 
-- 🔍 **Web Search**:  
-  - Search the internet and retrieve relevant information to enhance your AI context
-  - Combines search providers, content scrapers, and result rerankers for optimal results
-  - **Customizable Jina Reranking**: Configure custom Jina API URLs for reranking services
-  - **[Learn More →](https://www.librechat.ai/docs/features/web_search)**
+### Transport Protocols
 
-- 🪄 **Generative UI with Code Artifacts**:  
-  - [Code Artifacts](https://youtu.be/GfTj7O4gmd0?si=WJbdnemZpJzBrJo3) allow creation of React, HTML, and Mermaid diagrams directly in chat
+- **Input**: STDIO transport (standard input/output)
+- **Output**: SSE transport (Server-Sent Events over HTTP/HTTPS)
 
-- 🎨 **Image Generation & Editing**
-  - Text-to-image and image-to-image with [GPT-Image-1](https://www.librechat.ai/docs/features/image_gen#1--openai-image-tools-recommended)
-  - Text-to-image with [DALL-E (3/2)](https://www.librechat.ai/docs/features/image_gen#2--dalle-legacy), [Stable Diffusion](https://www.librechat.ai/docs/features/image_gen#3--stable-diffusion-local), [Flux](https://www.librechat.ai/docs/features/image_gen#4--flux), or any [MCP server](https://www.librechat.ai/docs/features/image_gen#5--model-context-protocol-mcp)
-  - Produce stunning visuals from prompts or refine existing images with a single instruction
+### Error Handling
 
-- 💾 **Presets & Context Management**:  
-  - Create, Save, & Share Custom Presets  
-  - Switch between AI Endpoints and Presets mid-chat
-  - Edit, Resubmit, and Continue Messages with Conversation branching  
-  - Create and share prompts with specific users and groups
-  - [Fork Messages & Conversations](https://www.librechat.ai/docs/features/fork) for Advanced Context control
+The proxy includes comprehensive error handling:
+- Connection failures to remote SSE servers
+- Invalid URL formats
+- Authentication errors
+- Request/response parsing errors
+- Graceful degradation when remote capabilities are unavailable
 
-- 💬 **Multimodal & File Interactions**:  
-  - Upload and analyze images with Claude 3, GPT-4.5, GPT-4o, o1, Llama-Vision, and Gemini 📸  
-  - Chat with Files using Custom Endpoints, OpenAI, Azure, Anthropic, AWS Bedrock, & Google 🗃️
+### Logging
 
-- 🌎 **Multilingual UI**:
-  - English, 中文 (简体), 中文 (繁體), العربية, Deutsch, Español, Français, Italiano
-  - Polski, Português (PT), Português (BR), Русский, 日本語, Svenska, 한국어, Tiếng Việt
-  - Türkçe, Nederlands, עברית, Català, Čeština, Dansk, Eesti, فارسی
-  - Suomi, Magyar, Հայերեն, Bahasa Indonesia, ქართული, Latviešu, ไทย, ئۇيغۇرچە
+Detailed logging is provided via `console.error()` for debugging:
+- Connection status
+- Request/response details
+- Error information with stack traces
+- Performance metrics
 
-- 🧠 **Reasoning UI**:  
-  - Dynamic Reasoning UI for Chain-of-Thought/Reasoning AI models like DeepSeek-R1
+## API Reference
 
-- 🎨 **Customizable Interface**:  
-  - Customizable Dropdown & Interface that adapts to both power users and newcomers
+### MCPSSEProxy Class
 
-- 🗣️ **Speech & Audio**:  
-  - Chat hands-free with Speech-to-Text and Text-to-Speech  
-  - Automatically send and play Audio  
-  - Supports OpenAI, Azure OpenAI, and Elevenlabs
+#### Constructor
+```javascript
+new MCPSSEProxy(sseUrl, apiKey, serverName)
+```
 
-- 📥 **Import & Export Conversations**:  
-  - Import Conversations from LibreChat, ChatGPT, Chatbot UI  
-  - Export conversations as screenshots, markdown, text, json
+- `sseUrl` (string): URL of the SSE MCP server
+- `apiKey` (string, optional): API key for authentication
+- `serverName` (string): Display name for the proxy server
 
-- 🔍 **Search & Discovery**:  
-  - Search all messages/conversations
+#### Methods
 
-- 👥 **Multi-User & Secure Access**:
-  - Multi-User, Secure Authentication with OAuth2, LDAP, & Email Login Support
-  - Built-in Moderation, and Token spend tools
+- `initialize()`: Initialize client and server connections
+- `run()`: Start the proxy server
+- `close()`: Gracefully shutdown the proxy
+- `setupProxyHandlers()`: Configure request handlers
 
-- ⚙️ **Configuration & Deployment**:  
-  - Configure Proxy, Reverse Proxy, Docker, & many Deployment options  
-  - Use completely local or deploy on the cloud
+## Development
 
-- 📖 **Open-Source & Community**:  
-  - Completely Open-Source & Built in Public  
-  - Community-driven development, support, and feedback
+### Project Structure
 
-[For a thorough review of our features, see our docs here](https://docs.librechat.ai/) 📚
+```
+mcp-proxy-node/
+├── server/
+│   └── index.js          # Main proxy server implementation
+├── package.json          # Project configuration and dependencies
+├── manifest.json         # DXT manifest for MCP client integration
+├── favicon.png          # Project icon
+└── README.md            # This file
+```
 
-## 🪶 All-In-One AI Conversations with LibreChat
+### Dependencies
 
-LibreChat brings together the future of assistant AIs with the revolutionary technology of OpenAI's ChatGPT. Celebrating the original styling, LibreChat gives you the ability to integrate multiple AI models. It also integrates and enhances original client features such as conversation and message search, prompt templates and plugins.
+- `@modelcontextprotocol/sdk`: Official MCP SDK for Node.js
 
-With LibreChat, you no longer need to opt for ChatGPT Plus and can instead use free or pay-per-call APIs. We welcome contributions, cloning, and forking to enhance the capabilities of this advanced chatbot platform.
+### Contributing
 
-[![Watch the video](https://raw.githubusercontent.com/LibreChat-AI/librechat.ai/main/public/images/changelog/v0.7.6.gif)](https://www.youtube.com/watch?v=ilfwGQtJNlI)
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
-Click on the thumbnail to open the video☝️
+## Troubleshooting
 
----
+### Common Issues
 
-## 🌐 Resources
+1. **Connection Refused**
+   - Verify the SSE URL is correct and accessible
+   - Check if the remote server is running
+   - Ensure firewall/network settings allow connections
 
-**GitHub Repo:**
-  - **RAG API:** [github.com/danny-avila/rag_api](https://github.com/danny-avila/rag_api)
-  - **Website:** [github.com/LibreChat-AI/librechat.ai](https://github.com/LibreChat-AI/librechat.ai)
+2. **Authentication Errors**
+   - Verify the API key is correct
+   - Check if the remote server expects authentication
+   - Ensure the API key format matches server expectations
 
-**Other:**
-  - **Website:** [librechat.ai](https://librechat.ai)
-  - **Documentation:** [librechat.ai/docs](https://librechat.ai/docs)
-  - **Blog:** [librechat.ai/blog](https://librechat.ai/blog)
+3. **No Tools/Resources Available**
+   - Check if the remote server actually provides tools/resources
+   - Verify the remote server is responding correctly
+   - Check proxy logs for error messages
 
----
+4. **Performance Issues**
+   - Monitor network latency to the remote server
+   - Check for rate limiting on the remote server
+   - Consider connection pooling for high-frequency usage
 
-## 📝 Changelog
+### Debugging
 
-Keep up with the latest updates by visiting the releases page and notes:
-- [Releases](https://github.com/danny-avila/LibreChat/releases)
-- [Changelog](https://www.librechat.ai/changelog) 
+Enable detailed logging by examining the console output. The proxy logs:
+- Connection attempts and results
+- Request/response details
+- Error messages with stack traces
+- Performance timing
 
-**⚠️ Please consult the [changelog](https://www.librechat.ai/changelog) for breaking changes before updating.**
+## Join our community for help and updates
 
----
+👉 **Slack Community -** [AI in Ads](https://join.slack.com/t/ai-in-ads/shared_invite/zt-379x2i0nk-W3VSAh2c6uddFgxxksA2oQ)
 
-## ⭐ Star History
+## Also checkout our other projects
 
-<p align="center">
-  <a href="https://star-history.com/#danny-avila/LibreChat&Date">
-    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=danny-avila/LibreChat&type=Date&theme=dark" onerror="this.src='https://api.star-history.com/svg?repos=danny-avila/LibreChat&type=Date'" />
-  </a>
-</p>
-<p align="center">
-  <a href="https://trendshift.io/repositories/4685" target="_blank" style="padding: 10px;">
-    <img src="https://trendshift.io/api/badge/repositories/4685" alt="danny-avila%2FLibreChat | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/>
-  </a>
-  <a href="https://runacap.com/ross-index/q1-24/" target="_blank" rel="noopener" style="margin-left: 20px;">
-    <img style="width: 260px; height: 56px" src="https://runacap.com/wp-content/uploads/2024/04/ROSS_badge_white_Q1_2024.svg" alt="ROSS Index - Fastest Growing Open-Source Startups in Q1 2024 | Runa Capital" width="260" height="56"/>
-  </a>
-</p>
+👉 **Facebook Ads MCP -** [Facebook Ads MCP](https://github.com/gomarble-ai/facebook-ads-mcp-server)
+👉 **Google Ads MCP -** [Google Ads MCP](https://github.com/gomarble-ai/google-ads-mcp-server)
 
----
+## License
 
-## ✨ Contributions
+MIT License - see LICENSE file for details
 
-Contributions, suggestions, bug reports and fixes are welcome!
+## Support
 
-For new features, components, or extensions, please open an issue and discuss before sending a PR.
+For issues and questions:
+- Check the troubleshooting section above
+- Review the console logs for error details
+- Ensure your Node.js version meets requirements (>= 18.0.0)
+- Verify the remote SSE server is compatible with MCP protocol
 
-If you'd like to help translate LibreChat into your language, we'd love your contribution! Improving our translations not only makes LibreChat more accessible to users around the world but also enhances the overall user experience. Please check out our [Translation Guide](https://www.librechat.ai/docs/translation).
+## Compatibility
 
----
+- **Node.js**: >= 18.0.0
+- **MCP Protocol**: Compatible with MCP SDK v1.13.2+
+- **Platforms**: macOS, Windows, Linux
+- **Claude Desktop**: >= 0.10.0 
 
-## 💖 This project exists in its current state thanks to all the people who contribute
-
-<a href="https://github.com/danny-avila/LibreChat/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=danny-avila/LibreChat" />
-</a>
-
----
-
-## 🎉 Special Thanks
-
-We thank [Locize](https://locize.com) for their translation management tools that support multiple languages in LibreChat.
-
-<p align="center">
-  <a href="https://locize.com" target="_blank" rel="noopener noreferrer">
-    <img src="https://github.com/user-attachments/assets/d6b70894-6064-475e-bb65-92a9e23e0077" alt="Locize Logo" height="50">
-  </a>
-</p>
+**Made with ❤️ for the MCP community**
