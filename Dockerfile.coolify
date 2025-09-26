@@ -12,8 +12,10 @@ COPY --chown=node:node server/ /app/server/
 # Copy the custom librechat.yaml configuration
 COPY --chown=node:node librechat.yaml /app/librechat.yaml
 
-# Copy the .env file (will be overridden by Coolify environment variables)
-COPY --chown=node:node .env.example /app/.env
+# Create a minimal .env file (will be overridden by Coolify environment variables)
+RUN echo "# Default environment - will be overridden by Coolify" > /app/.env && \
+    echo "NODE_ENV=production" >> /app/.env && \
+    echo "PORT=3080" >> /app/.env
 
 # Install additional dependencies for the MCP server
 RUN cd /app/server && npm install

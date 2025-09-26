@@ -1,17 +1,47 @@
-**/.circleci
-**/.editorconfig
-**/.dockerignore
-**/.git
-**/.DS_Store
+# IDE and OS files
 **/.vscode
-**/node_modules
+**/.idea
+**/.DS_Store
+**/Thumbs.db
 
-# Specific patterns to ignore
-data-node
-meili_data*
-librechat*
-Dockerfile*
-docs
+# Git and development
+**/.git
+.gitignore
 
-# Ignore all hidden files
-.*
+# Development data directories
+data-node/
+data-node-backup/
+meili_data_v1.12/
+meili_data_backup/
+logs/
+logs_backup/
+uploads/
+
+# Development Docker files (keep Dockerfile.coolify)
+Dockerfile
+Dockerfile.multi
+docker-compose.yml
+docker-compose.override.yml
+
+# Development scripts
+*.sh
+setup_gomarble.sh
+test_gomarble_mcp.sh
+
+# Documentation and development files
+*.md
+README*
+docs/
+e2e/
+.husky/
+
+# Environment files (Coolify will inject these)
+.env
+.env.local
+.env.production
+.env.development
+
+# But keep these essential files
+!librechat.yaml
+!server/
+!coolify-environment-template.env
