@@ -1,0 +1,154 @@
+# Coolify Docker Compose for LibreChat with GoMarble MCP
+# Optimized for production deployment with Coolify
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.coolify
+    container_name: librechat-api
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+      - meilisearch
+      - rag_api
+    environment:
+      # Application Configuration
+      - HOST=0.0.0.0
+      - PORT=${PORT:-3080}
+      - DOMAIN_CLIENT=${DOMAIN_CLIENT}
+      - DOMAIN_SERVER=${DOMAIN_SERVER}
+      
+      # Database Configuration
+      - MONGO_URI=mongodb://mongodb:27017/LibreChat
+      - MEILI_HOST=http://meilisearch:7700
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
+      
+      # RAG Configuration
+      - RAG_PORT=${RAG_PORT:-8000}
+      - RAG_API_URL=http://rag_api:${RAG_PORT:-8000}
+      
+      # Authentication & Security
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+      - CREDS_KEY=${CREDS_KEY}
+      - CREDS_IV=${CREDS_IV}
+      
+      # GoMarble MCP Integration
+      - GOMARBLE_API_KEY=${GOMARBLE_API_KEY}
+      
+      # Additional API Keys
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - MISTRAL_API_KEY=${MISTRAL_API_KEY}
+      - OPENROUTER_KEY=${OPENROUTER_KEY}
+      - PORTKEY_API_KEY=${PORTKEY_API_KEY}
+      - PORTKEY_OPENAI_VIRTUAL_KEY=${PORTKEY_OPENAI_VIRTUAL_KEY}
+    ports:
+      - "${PORT:-3080}:${PORT:-3080}"
+    volumes:
+      - librechat_uploads:/app/uploads
+      - librechat_logs:/app/logs
+      - librechat_images:/app/client/public/images
+    networks:
+      - librechat_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${PORT:-3080}/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  mongodb:
+    image: mongo:7
+    container_name: librechat-mongodb
+    restart: unless-stopped
+    environment:
+      - MONGO_INITDB_DATABASE=LibreChat
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - librechat_network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.12.3
+    container_name: librechat-meilisearch
+    restart: unless-stopped
+    environment:
+      - MEILI_HOST=http://meilisearch:7700
+      - MEILI_NO_ANALYTICS=true
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
+    volumes:
+      - meilisearch_data:/meili_data
+    networks:
+      - librechat_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7700/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  vectordb:
+    image: pgvector/pgvector:0.8.0-pg15-trixie
+    container_name: librechat-vectordb
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=mydatabase
+      - POSTGRES_USER=myuser
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-mypassword}
+    volumes:
+      - vectordb_data:/var/lib/postgresql/data
+    networks:
+      - librechat_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U myuser -d mydatabase"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  rag_api:
+    image: ghcr.io/danny-avila/librechat-rag-api-dev-lite:latest
+    container_name: librechat-rag-api
+    restart: unless-stopped
+    depends_on:
+      - vectordb
+    environment:
+      - DB_HOST=vectordb
+      - RAG_PORT=${RAG_PORT:-8000}
+      - POSTGRES_DB=mydatabase
+      - POSTGRES_USER=myuser
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-mypassword}
+    networks:
+      - librechat_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${RAG_PORT:-8000}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  mongodb_data:
+    name: librechat_mongodb_data
+  meilisearch_data:
+    name: librechat_meilisearch_data
+  vectordb_data:
+    name: librechat_vectordb_data
+  librechat_uploads:
+    name: librechat_uploads
+  librechat_logs:
+    name: librechat_logs
+  librechat_images:
+    name: librechat_images
+
+networks:
+  librechat_network:
+    name: librechat_network
+    driver: bridge

@@ -1,0 +1,41 @@
+# Coolify Deployment Dockerfile for LibreChat with GoMarble MCP
+# Based on the official LibreChat development image with custom MCP integration
+
+FROM ghcr.io/danny-avila/librechat-dev:latest
+
+# Set working directory
+WORKDIR /app
+
+# Copy the GoMarble MCP server directory
+COPY --chown=node:node server/ /app/server/
+
+# Copy the custom librechat.yaml configuration
+COPY --chown=node:node librechat.yaml /app/librechat.yaml
+
+# Copy the .env file (will be overridden by Coolify environment variables)
+COPY --chown=node:node .env.example /app/.env
+
+# Install additional dependencies for the MCP server
+RUN cd /app/server && npm install
+
+# Ensure proper permissions
+RUN chown -R node:node /app/server && \
+    chmod +x /app/server/index.js
+
+# Create necessary directories for persistent data
+RUN mkdir -p /app/uploads /app/logs /app/images /app/data-node /app/meili_data_v1.12 && \
+    chown -R node:node /app/uploads /app/logs /app/images /app/data-node /app/meili_data_v1.12
+
+# Health check to ensure the application is running
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:${PORT:-3080}/api/health || exit 1
+
+# Use the same user as the base image
+USER node
+
+# Expose the application port
+EXPOSE ${PORT:-3080}
+
+# Use the same entrypoint as the base image
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["npm", "run", "backend"]

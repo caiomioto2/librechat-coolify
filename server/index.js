@@ -1,5 +1,11 @@
 #!/usr/bin/env node
 
+// Import EventSource polyfill for Node.js
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const EventSource = require('eventsource');
+global.EventSource = EventSource;
+
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";

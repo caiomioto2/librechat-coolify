@@ -163,18 +163,16 @@ actions:
     - 'librechat.ai'
     - 'google.com'
 
-# Google Ads MCP Server for Marketing Data Integration
+# GoMarble MCP Server for Marketing Data Integration (Direct SSE)
 mcpServers:
-  googleads:
-    command: node
-    args:
-      - "/app/server/index.js"
-      - "Google Ads MCP"
-      - "https://apps.gomarble.ai/mcp-api/sse"
-      - "${GOMARBLE_API_KEY}"
+  gomarble:
+    type: sse
+    url: "https://apps.gomarble.ai/mcp-api/sse"
     timeout: 30000
+    headers:
+      Authorization: "Bearer ${GOMARBLE_API_KEY}"
     instructions: |
-      Google Ads MCP provides access to marketing data from Facebook Ads, Google Ads, and Google Analytics.
+      GoMarble MCP provides access to marketing data from Facebook Ads, Google Ads, and Google Analytics.
       Use it to analyze ad performance, generate reports, and optimize marketing campaigns.
       
       Available capabilities:
